@@ -21,62 +21,110 @@ VIA_TESTNET_RPC_URL=https://via.testnet.viablockchain.dev
 PRIVATE_KEY=0xYOUR_DEPLOYER_PRIVATE_KEY
 ```
 
-## 2) Compile
+## 2) Critical config check (before compile)
+In `l2-contracts/hardhat.config.ts`, ensure zksolc is not using system-contract mode for this deployment:
+
+```ts
+zksolc: {
+  version: "1.5.0",
+  compilerSource: "binary",
+  settings: {
+    isSystem: false,
+  },
+},
+```
+
+(Or remove `isSystem` entirely.)
+
+## 3) Compile (clean rebuild)
 From `era-contracts/l2-contracts`:
 
 ```bash
+npx hardhat clean
 npx hardhat compile
 ```
 
-## 3) Deploy implementation + proxy
+## 4) Deploy implementation + proxy
 Start console:
 
 ```bash
 npx hardhat console --network viaTestnet
 ```
 
-Deploy impl:
+Use zkSync deployer path:
 
 ```js
-const [deployer] = await ethers.getSigners()
-const Impl = await ethers.getContractFactory("L2WrappedBaseToken", deployer)
-const impl = await Impl.deploy()
-await impl.deployed()
+const hre = require("hardhat")
+const { Wallet } = require("zksync-ethers")
+const { Deployer } = require("@matterlabs/hardhat-zksync-deploy")
+
+const pk = process.env.PRIVATE_KEY
+if (!pk) throw new Error("Missing PRIVATE_KEY in env")
+
+const wallet = new Wallet(pk, hre.ethers.provider)
+const deployer = new Deployer(hre, wallet)
+```
+
+Optional balance check with direct provider:
+
+```js
+const { Provider, Wallet: ZkWallet } = require("zksync-ethers")
+const rpc = process.env.VIA_TESTNET_RPC_URL || "https://via.testnet.viablockchain.dev"
+const provider = new Provider(rpc)
+const checkWallet = new ZkWallet(process.env.PRIVATE_KEY, provider)
+(await checkWallet.getBalance()).toString()
+```
+
+Deploy implementation:
+
+```js
+const implArtifact = await deployer.loadArtifact("L2WrappedBaseToken")
+const impl = await deployer.deploy(implArtifact)
 console.log("WBTC_IMPL:", impl.address)
 ```
 
-Deploy proxy:
+Deploy proxy with atomic initialization:
 
 ```js
-const Proxy = await ethers.getContractFactory(
-  "@openzeppelin/contracts-v4/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy",
-  deployer
+const proxyArtifact = await deployer.loadArtifact(
+  "@openzeppelin/contracts-v4/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy"
 )
-const proxy = await Proxy.deploy(impl.address, deployer.address, "0x")
-await proxy.deployed()
-console.log("WBTC_PROXY:", proxy.address)
-```
 
-## 4) Initialize proxy as WBTC
+const iface = new hre.ethers.utils.Interface(implArtifact.abi)
 
-```js
-const wbtc = await ethers.getContractAt("L2WrappedBaseToken", proxy.address, deployer)
-const l2BridgeAddress = "0x0000000000000000000000000000000000000001"
-const l1TokenAddress  = "0x0000000000000000000000000000000000000002"
+const l2BridgeAddress = "<SAFE_L2_BRIDGE_SENTINEL_OR_REAL_BRIDGE>"
+const l1TokenAddress  = "<L1_BTC_OR_PLACEHOLDER_NONZERO>"
 
-const tx = await wbtc.initializeV2(
+const initData = iface.encodeFunctionData("initializeV2", [
   "Wrapped BTC",
   "WBTC",
   l2BridgeAddress,
-  l1TokenAddress
-)
+  l1TokenAddress,
+])
+
+const proxy = await deployer.deploy(proxyArtifact, [
+  impl.address,
+  wallet.address,
+  initData,
+])
+
+console.log("WBTC_PROXY:", proxy.address)
+```
+
+## 5) If not using atomic init
+If initData was not passed during proxy deploy, initialize manually:
+
+```js
+const wbtc = await hre.ethers.getContractAt("L2WrappedBaseToken", proxy.address, wallet)
+const tx = await wbtc.initializeV2("Wrapped BTC", "WBTC", l2BridgeAddress, l1TokenAddress)
 await tx.wait()
 console.log("initialize tx:", tx.hash)
 ```
 
-## 5) Verify
+## 6) Verify
 
 ```js
+const wbtc = await hre.ethers.getContractAt("L2WrappedBaseToken", proxy.address, wallet)
 await wbtc.name()      // Wrapped BTC
 await wbtc.symbol()    // WBTC
 await wbtc.decimals()  // 18
@@ -89,9 +137,9 @@ let w = await wbtc.withdraw(1)
 await w.wait()
 ```
 
-## 6) Return values needed
+## 7) Return values needed
 - `WBTC_PROXY` (this is `WBTC_ADDRESS`)
-- `initializeV2` tx hash
+- `initializeV2` tx hash (if done manually)
 - metadata check outputs
 
 Then continue with `l2-contracts/src/dex/deployV2.ts`.
