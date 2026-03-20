@@ -21,9 +21,9 @@
     "hardhat": "=2.22.2",
     "hardhat-typechain": "^0.3.3",
     "mocha": "^9.0.2",
-    "ts-node": "^10.1.0",
+    "ts-node": "^10.9.2",
     "typechain": "^4.0.0",
-    "typescript": "^5.2.2",
+    "typescript": "^5.9.3",
     "zksync-ethers": "^5.9.0"
   },
   "scripts": {
@@ -42,6 +42,7 @@
     "deploy-consensus-registry": "ts-node src/deploy-consensus-registry.ts",
     "dex:check-multicall": "ts-node src/dex/checkMulticall.ts",
     "dex:extract-pair-hash": "ts-node src/dex/extractPairBytecodeHash.ts",
+    "dex:deploy-wbtc": "hardhat run src/dex/deployWbtcProxy.ts --network viaTestnet",
     "dex:deploy-v2": "ts-node src/dex/deployV2.ts"
   },
   "dependencies": {

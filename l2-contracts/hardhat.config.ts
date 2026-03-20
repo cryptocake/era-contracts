@@ -1,4 +1,3 @@
-import "@matterlabs/hardhat-zksync-verify";
 import "@nomicfoundation/hardhat-chai-matchers";
 import "hardhat-typechain";
 import "@matterlabs/hardhat-zksync";

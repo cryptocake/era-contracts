@@ -1,0 +1,23 @@
+{
+  "chainId": 25223,
+  "rpcUrl": "https://via.testnet.viablockchain.dev",
+  "explorerBaseUrl": "https://testnet.blockscout.onvia.org",
+  "contracts": {
+    "v2": {
+      "router02": "0xA362dD20529C2d42429881CFb3164f5f33551617",
+      "factory": "0x1b095e398Ba073AC804CaCA0e3F42278D01dD67c",
+      "wbtc": "0x5992Dc7Ca7ED9DBD3da8725e36eFe2B193673089",
+      "multicall": "0x9535747325757c4131AcD8DBBD8De22d02B3B762",
+      "pairBytecodeHash": "0x01000359b4ac5061667a9c704334363d22d438b16f82186c10c9cdf5e8b2a3af"
+    }
+  },
+  "meta": {
+    "deployedAt": "2026-03-20T17:27:34.544Z",
+    "gitCommit": "",
+    "compiler": {
+      "solc": "0.5.16,0.6.6,0.8.24",
+      "zksolc": "1.5.13"
+    },
+    "feeToSetter": "0x109b7B88485908aAC2FbD92141fDFEd439e12AEF"
+  }
+}
