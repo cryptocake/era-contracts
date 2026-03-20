@@ -21,28 +21,26 @@ VIA_TESTNET_RPC_URL=https://via.testnet.viablockchain.dev
 PRIVATE_KEY=0xYOUR_DEPLOYER_PRIVATE_KEY
 ```
 
-## 2) Critical config check (before compile)
-In `l2-contracts/hardhat.config.ts`, ensure zksolc is not using system-contract mode for this deployment:
-
-```ts
-zksolc: {
-  version: "1.5.0",
-  compilerSource: "binary",
-  settings: {
-    isSystem: false,
-  },
-},
-```
-
-(Or remove `isSystem` entirely.)
-
-## 3) Compile (clean rebuild)
-From `era-contracts/l2-contracts`:
+## 2) Pull latest branch + clean reinstall (required after plugin migration)
+From repo root:
 
 ```bash
+git checkout feat/via-uniswap-v2-deployments
+git pull
+```
+
+From `l2-contracts`:
+
+```bash
+rm -rf node_modules artifacts artifacts-zk cache typechain
+yarn install
 npx hardhat clean
 npx hardhat compile
 ```
+
+Notes:
+- This branch now uses unified `@matterlabs/hardhat-zksync` plugin stack.
+- `isSystem: true` must not be present for this deployment flow.
 
 ## 4) Deploy implementation + proxy
 Start console:
