@@ -1,8 +1,7 @@
-import "@matterlabs/hardhat-zksync-solc";
 import "@matterlabs/hardhat-zksync-verify";
 import "@nomicfoundation/hardhat-chai-matchers";
-import "@nomiclabs/hardhat-ethers";
 import "hardhat-typechain";
+import "@matterlabs/hardhat-zksync";
 
 // If no network is specified, use the default config
 if (!process.env.CHAIN_ETH_NETWORK) {
@@ -12,10 +11,15 @@ if (!process.env.CHAIN_ETH_NETWORK) {
 
 export default {
   zksolc: {
-    version: "1.5.0",
+    version: "1.5.13",
     compilerSource: "binary",
     settings: {
-      isSystem: true,
+      enableEraVMExtensions: false,
+      optimizer: {
+        enabled: true,
+        mode: "z",
+        fallback_to_optimizing_for_size: true,
+      },
     },
   },
   solidity: {
